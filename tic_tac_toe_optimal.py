@@ -1,6 +1,8 @@
 import sys
 
-# This script implements the tic-tac-toe game of a person and a program
+# final version
+
+# This is implementation of tic-tac-toe is the game of man and machine
 
 # The program follows the optimal strategy described in https://ru.wikipedia.org/wiki/
 
@@ -407,7 +409,7 @@ def next_game():
 def say_end(): print("Если надоест, скажи вошебное слово end, и игра закончится")
 
 
-print("Привет, я умею играть в крестики-нолики!")
+print("Привет, я умею играть в крестики-нолики! Сыграем?")
 say_end()
 while True:
     s = next_game()
