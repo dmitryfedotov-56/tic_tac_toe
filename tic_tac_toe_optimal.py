@@ -1,4 +1,5 @@
 import sys
+import random
 
 # final version
 
@@ -67,7 +68,7 @@ center = (1,1)                                      # center
 
 side = [(1,0), (0,1), (1,2), (2,1)]                 # side
 
-corner = [(0, 0), (0, 2), (2, 0), (2, 2)]           # corner
+corner = [(0, 0), (0, 2), (2, 2), (2, 0)]           # corner
 
 # possible lines ---------------------------------------------------------
 
@@ -84,18 +85,18 @@ def get_diagonal_2(f):                              # diagonal 2
     return [ f[i][2 - i] for i in range(3) ]
 
 
-# take cell cell = (row, col) in playing field f, sign - current sign ------------
-def take_cell(f, cell, sign):
-    global last
+def take_cell(f, cell, sign):   # take cell in playing field f, sign - current sign 
+    global init                 # init is modified                                
+    global last                 # last is modified
     row = cell[0]
     col = cell[1]
     f[row][col] = sign
+    if sign == cross:
+        if numb == 0: init = cell
     last = cell
 
-# check move result ------------------------------------------------------
 
-
-def move_result(f, sign):                       # move result,  f - playing field,  sing - opponent sign
+def move_result(f, sign):     # move result,  f - playing field, sing - current sign
     win_line = []
     for i in range(3): win_line.append(sign)
 
@@ -115,10 +116,8 @@ def move_result(f, sign):                       # move result,  f - playing fiel
 
     return draw
 
-# opponent move ----------------------------------------------------------
 
-
-def make_move(f, sign):      # get the cell number and check if it is free
+def make_move(f, sign):     # get the cell number and check if it is free
     while True:
         row = get_num("cтрока  : ")     # get row
         col = get_num("столбец : ")     # get column
@@ -133,7 +132,7 @@ def make_move(f, sign):      # get the cell number and check if it is free
 def say_draw(): print("Ну, ничья...")
 
 
-def opp_move(f, sign):            # opponent move,  f - playing field, sing - opponent sign
+def opp_move(f, sign):      # opponent move,  f - playing field, sing - opponent sign
     print("Твой ход")
     make_move(f, sign)
     draw_field(f)                       # draw field after move
@@ -146,15 +145,11 @@ def opp_move(f, sign):            # opponent move,  f - playing field, sing - op
         return draw
     return game
 
-# ------------------------------------------------------------------------
 
-
-def inverse(sign):                          # my opponent sign
+def inverse(sign):                      # my opponent sign
     if sign == cross : return nought
     if sign == nought: return cross
     return None
-
-#  make decision ---------------------------------------------------------
 
 
 def free_cell(f, cell):     # cell is free
@@ -179,7 +174,7 @@ def check_cell(f, p, cell): # if the cell in playing field f is free add it to t
 
 def choose_one(f, p, sign): # choose a possibility, f - playing field, p - list of possibilities, sign - current sign
     global last
-    take_cell(f, p[0], sign)
+    take_cell(f, random.choice(p), sign)
     return
 
 
@@ -191,6 +186,7 @@ def take_free_cell(f, sign):   # take a free cell, f - playing field. sign - cur
     choose_one(f, p, sign)
 
 # cross decision ----------------------------------------------------------
+
 
 def cross_decision(f):    # cross decision
 
@@ -209,8 +205,8 @@ def cross_decision(f):    # cross decision
     # the nought move is made in the side, try to take the most distant corner
     for i in range(4):
         if last == side[i]:
-            check_cell(corner[(i+1)%4])
-            check_cell(corner[(i+2)%4])
+            check_cell(f, p, corner[(i+1)%4])
+            check_cell(f, p, corner[(i+2)%4])
  
     # the nought move is made in the corner, try to take the opposite corner
     if last in corner:
@@ -225,6 +221,7 @@ def cross_decision(f):    # cross decision
     take_free_cell(f, cross)    # look for a free cell
 
 # nought decision ---------------------------------------------------------
+
 
 def nought_decision(f):
 
@@ -285,7 +282,8 @@ def nought_decision(f):
 
 # ------------------------------------------------------------------------
 
-def make_decision(f, sign):                  # make decision
+
+def make_decision(f, sign):                 # make decision
 
     opps = inverse(sign)                    # opponent sign
 
@@ -346,6 +344,7 @@ def make_decision(f, sign):                  # make decision
 
 # my move ----------------------------------------------------------------
 
+
 def my_move(f, sign):                   # my move, f - playing field, sing - my sign
     make_decision(f, sign)              # make decision
     print("Мой ход такой")
@@ -370,6 +369,7 @@ def choose_sign():                              # let the opponent to choose sig
 
 # next game  -----------------------------------------------------------
 
+
 def next_game():
     global numb
     opp_sign = choose_sign()                    # let the opponent to choose sign
@@ -378,18 +378,21 @@ def next_game():
     state = game                                # start the game
     numb = 0                                    # first move
     if opp_sign == cross :                      # the first move
+        draw_field(field)
         state = opp_move(field, opp_sign)       # is the move of the crosses
     while state == game:
         state = my_move(field, my_sign)         # my move
-        if sign == cross: numb += 1             # next move
+        if opp_sign == cross: numb += 1         # next move
         if state != game: return state          # check state
         state = opp_move(field, opp_sign)       # opponent move
-        if sign == nought: numb += 1            # next move
+        if opp_sign == nought: numb += 1        # next move
         if state != game: return state          # check state
 
 # the whole session -----------------------------------------------------
 
+
 def say_end(): print("Если надоест, скажи вошебное слово end, и игра закончится")
+
 
 print("Привет, я умею играть в крестики-нолики! Сыграем?")
 say_end()
