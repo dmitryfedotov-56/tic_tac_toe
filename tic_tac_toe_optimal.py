@@ -63,24 +63,24 @@ numb = 0            # move number
 last = (0, 0)       # last move of crosses
 init = (0, 0)       # init move of crosses
 
-side = [(0,1), (1,2), (2,1), (1,0)]
-oppside = [(2,1), (1,0), (0,1), (1,2)]
+center = (1,1)                                      # center
 
-corner = [(0, 0), (0, 2), (2, 0), (2, 2)]       # corner
-oppcorner = [(2, 2), (2, 0), (0, 2), (0, 0)]    # opposite corner
+side = [(1,0), (0,1), (1,2), (2,1)]                 # side
+
+corner = [(0, 0), (0, 2), (2, 0), (2, 2)]           # corner
 
 # possible lines ---------------------------------------------------------
 
 
-def get_column(f, col):                         # column
+def get_column(f, col):                             # column
     return [ f[row][col] for row in range(3)]
 
 
-def get_diagonal_1(f):                          # diagonal 1
+def get_diagonal_1(f):                              # diagonal 1
     return [ f[ i][i ] for i in range(3) ]
 
 
-def get_diagonal_2(f):                          # diagonal 2
+def get_diagonal_2(f):                              # diagonal 2
     return [ f[i][2 - i] for i in range(3) ]
 
 
@@ -192,39 +192,31 @@ def take_free_cell(f, sign):   # take a free cell, f - playing field. sign - cur
 
 # cross decision ----------------------------------------------------------
 
-
 def cross_decision(f):    # cross decision
 
     global init
     global last
     global numb
 
-    if numb == 0:
-        take_cell(f, (1, 1), cross)
-        init = (1,1)
+    # the first move should be made in the center       
+    if numb == 0:            
+        take_cell(f, center, cross)
+        init = center
         return
 
     p = []  # the list of possibilities
 
-    # the nought move is made in the side
-    if last == [0,1]:
-        check_cell(f, p, (2, 0))
-        check_cell(f, p, (2, 2))
-    if last == [1,0]:
-        check_cell(f, p, (0, 2))
-        check_cell(f, p, (2, 2))
-    if last == [1, 2]:
-        check_cell(f, p, (0, 0))
-        check_cell(f, p, (2, 0))
-    if last == [2,1]:
-        check_cell(f, p, (0, 0))
-        check_cell(f, p, (0, 2))
-
-    # the nought move is made in the corner, try to go to the opposite corner
+    # the nought move is made in the side, try to take the most distant corner
+    for i in range(4):
+        if last == side[i]:
+            check_cell(corner[(i+1)%4])
+            check_cell(corner[(i+2)%4])
+ 
+    # the nought move is made in the corner, try to take the opposite corner
     if last in corner:
         for i in range(4):
             if last == corner[i]:
-                check_cell(f, p, oppcorner[i])
+                check_cell(f, p, corner[(i+2)%4])
 
     if len(p) != 0 :            # if I have I some possibilities choose one of them
         choose_one(f, p, cross)
@@ -234,63 +226,57 @@ def cross_decision(f):    # cross decision
 
 # nought decision ---------------------------------------------------------
 
-
 def nought_decision(f):
 
     p = []      # the list of possibilities
 
     # the first move of the crosses is made in the center, check corners
-    if init == (1,1):
-        for i in range(4):
-            check_cell(f, p, corner[i])
+    if init == center:
+        for i in range(4): check_cell(f, p, corner[i])
 
     # the first move of the crosses is made in the corner
     if init in corner:
         if numb == 0:                       # first move?
-            take_cell(f, (1, 1), nought)    # go to the center
+            take_cell(f, center, nought)    # take the center
             return
         if numb == 1:                       # second move?
-            for i in range(4):              # take the opposite corner
-                if init == corner[i]:
-                    if free_cell(f, oppcorner[i]):
-                        take_cell(f,oppcorner[i], nought)
+            for i in range(4):              # look for the crossed corner
+                if init == corner[i]:       # the crosed corner
+                    cell = corner[(i+2)%4]  # the opposite corner
+                    if free_cell(f, cell):  # is it free? 
+                        take_cell(f,cell)   # take the opposite corner 
                         return
-            p = side    # if it is not free choose a side cell
+            # the opposite corner is occupied, try to take some side
+            for i in range(4):
+                check_cell(f,p,side[i])    
 
-    # the first move of the crosses is made in the side
+    # the first move of the crosses is made in some side
     if init in side:
         if numb == 0:                       # first move?
-            take_cell(f, (1,1), nought)     # go to the center
+            take_cell(f, center, nought)    # take the center
             return
 
         if numb == 1:                       # second move
 
             for i in range(4):              # is the move of the crosses made in the corner?
                 if last == corner[i]:
-                    take_cell(f, oppcorner[i], nought)
+                    take_cell(f, corner[(i+2)%4], nought)   # take the opposite corner
                     return
 
-            if init in side:                                # the move of the crosses made in the side check corners
-                if crossed(f,(0,1)) and crossed(f,(1,0)):   # corner 0,0
-                    take_cell(f,(0,0), nought)
-                    return
-                if crossed(f,(1,2)) and crossed(f,(0,1)):   # corner 0,2
-                    take_cell(f,(0,2), nought)
-                    return
-                if crossed(f,(2,1)) and crossed(f,(1,2)):   # corner 2,2
-                    take_cell(f,(2,2), nought)
-                    return
-                if crossed(f,(1,0)) and crossed(f,(2,1)):   # corner 0,2
-                    take_cell(f,(0,2), nought)
+            # find initial side
+            for i in range(4):                  
+                if init == side[i]: 
+                    if last == side[(i+2)%4]: # the last move is in the the opposite side?
+                        for j in range(4):      
+                            check_cell(f, p, corner[j]) # take some corner
+
+            # check corners
+            for i in range(4):
+                if crossed(f,side[i]) and crossed(f,side[(i+1)%4]):   
+                    take_cell(f, corner[i], nought)
                     return
 
-                for i in range(4):                  # is the move of the crosses made in the side?
-                    if init == side[i]:             # is it the opposite side?
-                        if last == oppside[i]:
-                            for j in range(4):
-                                check_cell(f, p, corner[j])
-
-    if len(p) != 0:                 # if I have some possibilities choose one of them
+    if len(p) != 0:     # if I have some possibilities choose one of them
         print(p)
         choose_one(f, p, nought)
         return
@@ -298,7 +284,6 @@ def nought_decision(f):
     take_free_cell(f, nought)       # if no take a free cell
 
 # ------------------------------------------------------------------------
-
 
 def make_decision(f, sign):                  # make decision
 
@@ -361,7 +346,6 @@ def make_decision(f, sign):                  # make decision
 
 # my move ----------------------------------------------------------------
 
-
 def my_move(f, sign):                   # my move, f - playing field, sing - my sign
     make_decision(f, sign)              # make decision
     print("Мой ход такой")
@@ -386,7 +370,6 @@ def choose_sign():                              # let the opponent to choose sig
 
 # next game  -----------------------------------------------------------
 
-
 def next_game():
     global numb
     opp_sign = choose_sign()                    # let the opponent to choose sign
@@ -398,16 +381,15 @@ def next_game():
         state = opp_move(field, opp_sign)       # is the move of the crosses
     while state == game:
         state = my_move(field, my_sign)         # my move
+        if sign == cross: numb += 1             # next move
         if state != game: return state          # check state
         state = opp_move(field, opp_sign)       # opponent move
+        if sign == nought: numb += 1            # next move
         if state != game: return state          # check state
-        numb += 1                               # next move
 
 # the whole session -----------------------------------------------------
 
-
 def say_end(): print("Если надоест, скажи вошебное слово end, и игра закончится")
-
 
 print("Привет, я умею играть в крестики-нолики! Сыграем?")
 say_end()
